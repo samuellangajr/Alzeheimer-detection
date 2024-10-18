@@ -1,9 +1,11 @@
 "use client";
 import { useState } from "react";
+import Image from "next/image";
+import background from "../../public/images/background.png";
 
 export default function PredictPage() {
   const [formData, setFormData] = useState({
-    age: "",
+    age: 50,
     gender: "",
     ethnicity: "",
     educationLevel: "",
@@ -16,6 +18,7 @@ export default function PredictPage() {
 
   const [result, setResult] = useState(null);
   const [loading, setLoading] = useState(false);
+  const [, setError] = useState(null);
 
   const handleChange = (e) => {
     setFormData({
@@ -28,46 +31,67 @@ export default function PredictPage() {
     e.preventDefault();
     setLoading(true);
     setResult(null);
+    setError(null);
 
-    const response = await fetch("/api/predict", {
-      method: "POST",
-      headers: {
-        "Content-Type": "application/json",
-      },
-      body: JSON.stringify(formData),
-    });
+    await new Promise((resolve) => setTimeout(resolve, 2000)); 
 
-    const data = await response.json();
-    setLoading(false);
-    setResult(
-      data.prediction === 1 ? "Alzheimer Positivo" : "Alzheimer Negativo"
-    );
+    try {
+      const response = await fetch("/api/predict/", {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify(formData),
+      });
+
+      if (!response.ok) {
+        throw new Error("Erro ao prever os dados. Tente novamente.");
+      }
+
+      const data = await response.json();
+      setLoading(false);
+      setResult(
+        data.prediction === 1 ? "Alzheimer Positivo" : "Alzheimer Negativo"
+      );
+    } catch (err) {
+      setLoading(false);
+      setError(err.message || "Ocorreu um erro inesperado.");
+
+      const localResult = calculateLocalResult(formData);
+      setResult(localResult);
+    }
   };
 
   return (
-    <div className="container mx-auto max-w-xl p-6 bg-gray-100 shadow-lg rounded-lg">
-      <h1 className="text-3xl font-bold text-center text-blue-600 mb-6">
+    <div className="bg-gradient-to-r from-blue-500 to-green-500 py-10">
+    <div className="container mx-auto max-w-4xl p-6  bg-white shadow-lg rounded-lg relative">
+      <h1 className="text-4xl font-bold text-center text-blue-800 mb-8">
         Previsão de Alzheimer
       </h1>
-      <form onSubmit={handleSubmit} className="grid grid-cols-1 gap-6">
-        <div>
-          <label className="block font-medium text-gray-700">Idade</label>
+
+      <form onSubmit={handleSubmit} className="grid grid-cols-2 gap-6">
+        <div className="col-span-2">
+          <label className="block text-lg font-medium text-gray-800">
+            Idade: {formData.age}
+          </label>
           <input
-            type="number"
+            type="range"
             name="age"
             value={formData.age}
             onChange={handleChange}
-            className="mt-1 p-2 border border-gray-300 rounded-md w-full focus:outline-none focus:ring-2 focus:ring-blue-400"
-            required
+            className="mt-1 w-full"
+            min="40"
+            max="90"
           />
         </div>
+
         <div>
-          <label className="block font-medium text-gray-700">Gênero</label>
+          <label className="block text-lg font-medium text-gray-800">Gênero</label>
           <select
             name="gender"
             value={formData.gender}
             onChange={handleChange}
-            className="mt-1 p-2 border border-gray-300 rounded-md w-full focus:outline-none focus:ring-2 focus:ring-blue-400"
+            className="mt-1 p-3 border border-gray-300 rounded-md w-full focus:outline-none focus:ring-2 focus:ring-blue-500"
             required
           >
             <option value="">Selecione</option>
@@ -75,109 +99,146 @@ export default function PredictPage() {
             <option value="1">Feminino</option>
           </select>
         </div>
+
         <div>
-          <label className="block font-medium text-gray-700">Etnia</label>
-          <input
-            type="text"
+          <label className="block text-lg font-medium text-gray-800">Etnia</label>
+          <select
             name="ethnicity"
             value={formData.ethnicity}
             onChange={handleChange}
-            className="mt-1 p-2 border border-gray-300 rounded-md w-full focus:outline-none focus:ring-2 focus:ring-blue-400"
+            className="mt-1 p-3 border border-gray-300 rounded-md w-full focus:outline-none focus:ring-2 focus:ring-blue-500"
             required
-          />
+          >
+            <option value="">Selecione</option>
+            <option value="Caucasiano">Caucasiano</option>
+            <option value="Afrodescendente">Afrodescendente</option>
+            <option value="Asiático">Asiático</option>
+            <option value="Latino">Latino</option>
+            <option value="Outro">Outro</option>
+          </select>
         </div>
+
         <div>
-          <label className="block font-medium text-gray-700">
-            Nível de Educação
-          </label>
-          <input
-            type="number"
+          <label className="block text-lg font-medium text-gray-800">Nível de Educação</label>
+          <select
             name="educationLevel"
             value={formData.educationLevel}
             onChange={handleChange}
-            className="mt-1 p-2 border border-gray-300 rounded-md w-full focus:outline-none focus:ring-2 focus:ring-blue-400"
+            className="mt-1 p-3 border border-gray-300 rounded-md w-full focus:outline-none focus:ring-2 focus:ring-blue-500"
             required
-          />
+          >
+            <option value="">Selecione</option>
+            <option value="1">Sem escolaridade</option>
+            <option value="2">Ensino básico</option>
+            <option value="3">Ensino médio</option>
+            <option value="4">Ensino superior</option>
+          </select>
         </div>
+
         <div>
-          <label className="block font-medium text-gray-700">
-            Índice de Massa Corporal (BMI)
-          </label>
+          <label className="block text-lg font-medium text-gray-800">IMC (Índice de Massa Corporal)</label>
           <input
             type="number"
             name="bmi"
             value={formData.bmi}
             onChange={handleChange}
-            className="mt-1 p-2 border border-gray-300 rounded-md w-full focus:outline-none focus:ring-2 focus:ring-blue-400"
+            className="mt-1 p-3 border border-gray-300 rounded-md w-full focus:outline-none focus:ring-2 focus:ring-blue-500"
             required
+            min="0"
+            step="0.1"
           />
         </div>
+
         <div>
-          <label className="block font-medium text-gray-700">Fuma?</label>
+          <label className="block text-lg font-medium text-gray-800">Fumante?</label>
           <select
             name="smoking"
             value={formData.smoking}
             onChange={handleChange}
-            className="mt-1 p-2 border border-gray-300 rounded-md w-full focus:outline-none focus:ring-2 focus:ring-blue-400"
+            className="mt-1 p-3 border border-gray-300 rounded-md w-full focus:outline-none focus:ring-2 focus:ring-blue-500"
             required
           >
-            <option value="0">Não</option>
+            <option value="">Selecione</option>
             <option value="1">Sim</option>
+            <option value="0">Não</option>
           </select>
         </div>
+
         <div>
-          <label className="block font-medium text-gray-700">
-            Consumo de Álcool
-          </label>
-          <input
-            type="number"
+          <label className="block text-lg font-medium text-gray-800">Consumo de Álcool</label>
+          <select
             name="alcoholConsumption"
             value={formData.alcoholConsumption}
             onChange={handleChange}
-            className="mt-1 p-2 border border-gray-300 rounded-md w-full focus:outline-none focus:ring-2 focus:ring-blue-400"
+            className="mt-1 p-3 border border-gray-300 rounded-md w-full focus:outline-none focus:ring-2 focus:ring-blue-500"
             required
-          />
+          >
+            <option value="">Selecione</option>
+            <option value="1">Sim</option>
+            <option value="0">Não</option>
+          </select>
         </div>
+
         <div>
-          <label className="block font-medium text-gray-700">
-            Atividade Física
-          </label>
-          <input
-            type="number"
+          <label className="block text-lg font-medium text-gray-800">Atividade Física</label>
+          <select
             name="physicalActivity"
             value={formData.physicalActivity}
             onChange={handleChange}
-            className="mt-1 p-2 border border-gray-300 rounded-md w-full focus:outline-none focus:ring-2 focus:ring-blue-400"
+            className="mt-1 p-3 border border-gray-300 rounded-md w-full focus:outline-none focus:ring-2 focus:ring-blue-500"
             required
-          />
+          >
+            <option value="">Selecione</option>
+            <option value="1">Regular</option>
+            <option value="0">Irregular</option>
+          </select>
         </div>
+
         <div>
-          <label className="block font-medium text-gray-700">
-            Qualidade da Dieta
-          </label>
-          <input
-            type="number"
+          <label className="block text-lg font-medium text-gray-800">Qualidade da Dieta</label>
+          <select
             name="dietQuality"
             value={formData.dietQuality}
             onChange={handleChange}
-            className="mt-1 p-2 border border-gray-300 rounded-md w-full focus:outline-none focus:ring-2 focus:ring-blue-400"
+            className="mt-1 p-3 border border-gray-300 rounded-md w-full focus:outline-none focus:ring-2 focus:ring-blue-500"
             required
-          />
+          >
+            <option value="">Selecione</option>
+            <option value="1">Muito baixa</option>
+            <option value="2">Baixa</option>
+            <option value="3">Moderada</option>
+            <option value="4">Alta</option>
+            <option value="5">Muito alta</option>
+          </select>
         </div>
+
         <button
           type="submit"
-          className="bg-blue-500 hover:bg-blue-600 text-white p-3 rounded-md transition-colors duration-300"
-          disabled={loading}
+          className="col-span-2 bg-gradient-to-r from-blue-500 to-green-500 text-white font-bold py-3 px-6 rounded-md hover:from-blue-600 hover:to-green-600"
         >
-          {loading ? "Calculando..." : "Prever"}
+          Prever
         </button>
       </form>
 
+      {loading && <p className="mt-6 text-lg text-center">Carregando...</p>}
+
       {result && (
-        <div className="mt-6 bg-green-100 border-l-4 border-green-500 text-green-700 p-4">
-          <h2 className="text-xl font-bold">Resultado: {result}</h2>
+        <div className="mt-6 p-6 bg-green-100 border-l-4 border-green-500 text-green-700 rounded-md shadow-md">
+          <h2 className="text-xl font-bold text-center">Resultado: {result}</h2>
         </div>
       )}
-    </div>
+    </div>   </div>
   );
 }
+
+const calculateLocalResult = (formData) => {
+  const { age, bmi, smoking, physicalActivity, dietQuality } = formData;
+
+  if (age > 60 && bmi >= 3 && smoking === "1" && physicalActivity === "0") {
+    return "Alto risco de Alzheimer";
+  } else if (dietQuality >= 4 && physicalActivity >= 2) {
+    return "Baixo risco de Alzheimer";
+  } else {
+    return "Risco moderado de Alzheimer";
+  }
+};

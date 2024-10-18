@@ -1,35 +1,49 @@
 import { spawn } from 'child_process';
 
-export default async function handler(req, res) {
-  if (req.method === 'POST') {
-    const {
-      age,
-      gender,
-      ethnicity,
-      educationLevel,
-      bmi,
-      smoking,
-      alcoholConsumption,
-      physicalActivity,
-      dietQuality,
-    } = req.body;
 
-    const inputData = [
-      age, gender, ethnicity, educationLevel, bmi, smoking,
-      alcoholConsumption, physicalActivity, dietQuality,
-    ];
+export async function POST(req, res) {
+    try {
+      const {
+        age,
+        gender,
+        ethnicity,
+        educationLevel,
+        bmi,
+        smoking,
+        alcoholConsumption,
+        physicalActivity,
+        dietQuality,
+      } = req.body;
 
-    const pythonProcess = spawn('python3', ['predict_model.py', JSON.stringify(inputData)]);
-    pythonProcess.stdout.on('data', (data) => {
-      const prediction = data.toString().trim();
-      res.status(200).json({ prediction });
-    });
+      const inputData = [
+        age, gender, ethnicity, educationLevel, bmi, smoking,
+        alcoholConsumption, physicalActivity, dietQuality,
+      ];
 
-    pythonProcess.stderr.on('data', (data) => {
-      res.status(500).json({ error: data.toString() });
-    });
+      const pythonProcess = spawn('python3', ['predict_model.py', JSON.stringify(inputData)]);
 
-  } else {
-    res.status(405).json({ message: 'Method Not Allowed' });
-  }
+      let outputData = '';
+      let errorData = '';
+
+      pythonProcess.stdout.on('data', (data) => {
+        outputData += data.toString();
+      });
+
+      pythonProcess.stderr.on('data', (data) => {
+        errorData += data.toString();
+      });
+
+      pythonProcess.on('close', (code) => {
+        if (code === 0) {
+          res.status(200).json({ prediction: outputData.trim() });
+        } else {
+          res.status(500).json({ error: errorData || 'Erro na execução do script Python' });
+        }
+      });
+
+    // eslint-disable-next-line @typescript-eslint/no-unused-vars
+    } catch (error) {
+      res.status(500).json({ error: 'Erro no servidor' });
+    }
+
 }
