@@ -16,7 +16,7 @@ export default function PredictPage() {
 
   const [result, setResult] = useState(null);
   const [loading, setLoading] = useState(false);
-  const [, setError] = useState(null);
+  const [error, setError] = useState(null);
 
   const handleChange = (e) => {
     setFormData({
@@ -30,8 +30,6 @@ export default function PredictPage() {
     setLoading(true);
     setResult(null);
     setError(null);
-
-    await new Promise((resolve) => setTimeout(resolve, 2000)); 
 
     try {
       const response = await fetch("/api/predict/", {
@@ -49,14 +47,12 @@ export default function PredictPage() {
       const data = await response.json();
       setLoading(false);
       setResult(
-        data.prediction === 1 ? "Alzheimer Positivo" : "Alzheimer Negativo"
+        data.prediction === 1 ? "Alto Risco moderado de Alzheimer" : "Risco moderado de Alzheimer"
       );
     } catch (err) {
       setLoading(false);
       setError(err.message || "Ocorreu um erro inesperado.");
 
-      const localResult = calculateLocalResult(formData);
-      setResult(localResult);
     }
   };
 
@@ -225,18 +221,13 @@ export default function PredictPage() {
           <h2 className="text-xl font-bold text-center">Resultado: {result}</h2>
         </div>
       )}
-    </div>   </div>
+       {error && (
+        <div className="mt-6 p-6 bg-red-100 border-l-4 border-red-500 text-red-700 rounded-md shadow-md">
+          <h2 className="text-xl font-bold text-center">Erro: {error}</h2>
+        </div>
+      )}
+      </div>
+      </div>
   );
 }
 
-const calculateLocalResult = (formData) => {
-  const { age, bmi, smoking, physicalActivity, dietQuality } = formData;
-
-  if (age > 60 && bmi >= 3 && smoking === "1" && physicalActivity === "0") {
-    return "Alto risco de Alzheimer";
-  } else if (dietQuality >= 4 && physicalActivity >= 2) {
-    return "Baixo risco de Alzheimer";
-  } else {
-    return "Risco moderado de Alzheimer";
-  }
-};
